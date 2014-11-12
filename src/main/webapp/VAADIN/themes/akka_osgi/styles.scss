@@ -1,0 +1,9 @@
+@import "addons.scss";
+@import "akka_osgi.scss";
+
+/* This file prefixes all rules with the theme name to avoid causing conflicts with other themes. */
+/* The actual styles should be defined in akka_osgi.scss */
+.akka_osgi {
+  @include addons;
+  @include akka_osgi;
+}
