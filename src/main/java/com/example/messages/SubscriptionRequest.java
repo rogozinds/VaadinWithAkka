@@ -1,8 +1,8 @@
-package akka.simple;
+package com.example.messages;
 
 import java.io.Serializable;
 
-public class RequestApproving implements Serializable{
+public class SubscriptionRequest implements Serializable{
 
 	/**
 	 * 

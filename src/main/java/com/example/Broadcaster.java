@@ -1,4 +1,4 @@
-package com.example.akka_osgi;
+package com.example;
 
 import java.io.Serializable;
 import java.util.LinkedList;

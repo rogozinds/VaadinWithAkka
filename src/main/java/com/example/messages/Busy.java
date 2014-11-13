@@ -1,8 +1,8 @@
-package akka.simple;
+package com.example.messages;
 
 import java.io.Serializable;
 
-public class PHONE_BUSY implements Serializable{
+public class Busy implements Serializable{
 
 	/**
 	 * 

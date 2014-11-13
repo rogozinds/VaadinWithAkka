@@ -1,4 +1,4 @@
-package akka.simple;
+package com.example.messages;
 
 import java.io.Serializable;
 
