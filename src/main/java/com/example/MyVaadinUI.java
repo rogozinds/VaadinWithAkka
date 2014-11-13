@@ -1,17 +1,14 @@
 package com.example;
 
-import java.util.concurrent.TimeUnit;
-
 import javax.servlet.annotation.WebServlet;
 
-import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 
 import com.example.Broadcaster.BroadcastListener;
 import com.example.actors.ServiceProvider;
-import com.example.actors.Subscription;
+import com.example.actors.SubscriptionPool;
 import com.example.messages.SubscriptionRequest;
 import com.vaadin.annotations.Push;
 import com.vaadin.annotations.Theme;
@@ -63,25 +60,29 @@ public class MyVaadinUI extends UI implements BroadcastListener {
 
 	private void startsActors() {
 		final int N_SUBSCRIPTIONS = 10;
-		final int TIMEOUT = 1;
 
-		final ActorRef phone = actorSystem
-				.actorOf(Props.create(ServiceProvider.class));
+		final ActorRef servProvider = actorSystem.actorOf(Props
+				.create(ServiceProvider.class));
 		String[] subsNames = new String[N_SUBSCRIPTIONS];
-		ActorRef[] subscriptions = new ActorRef[N_SUBSCRIPTIONS];
+		// Create a subscription pool actor, all subscriptions will be created
+		// in that class.
+		ActorRef subscriptionPool = actorSystem.actorOf(Props.create(
+				SubscriptionPool.class, N_SUBSCRIPTIONS, servProvider));
+
 		for (int i = 0; i < N_SUBSCRIPTIONS; i++) {
 			subsNames[i] = "Subscription " + i;
-			subscriptions[i] = actorSystem.actorOf(Props.create(
-					Subscription.class, subsNames[i]));
 			requestedSubsTextArea.setValue(requestedSubsTextArea.getValue()
 					+ "Requested: " + subsNames[i] + "\n");
-			// sends request of subscription every TIMEOUT seconds
-			// sends request from SubscriptionActor to PhoneActor
-			actorSystem.scheduler().scheduleOnce(
-					Duration.create(TIMEOUT, TimeUnit.SECONDS), phone,
-					new SubscriptionRequest(), actorSystem.dispatcher(),
-					subscriptions[i]);
 		}
+		// sends request of subscription every TIMEOUT seconds
+		// sends request from SubscriptionActor to PhoneActor
+		// actorSystem.scheduler().scheduleOnce(
+		// Duration.create(TIMEOUT, TimeUnit.SECONDS), servProvider,
+		// new SubscriptionRequest(), actorSystem.dispatcher(),
+		// subscriptions[i]);
+		// Send a message to the subscription pool and let it decide what to do
+		// :)
+		subscriptionPool.tell(new SubscriptionRequest(), null);
 
 	}
 
