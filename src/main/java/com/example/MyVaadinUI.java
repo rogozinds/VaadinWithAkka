@@ -9,6 +9,8 @@ import akka.actor.Props;
 import com.example.Broadcaster.BroadcastListener;
 import com.example.actors.ServiceProvider;
 import com.example.actors.SubscriptionPool;
+import com.example.messages.Recover;
+import com.example.messages.SimulatedErrorMessage;
 import com.example.messages.SubscriptionRequest;
 import com.vaadin.annotations.Push;
 import com.vaadin.annotations.Theme;
@@ -29,7 +31,7 @@ import com.vaadin.ui.VerticalLayout;
 @Push
 public class MyVaadinUI extends UI implements BroadcastListener {
 	public VerticalLayout mainLayout = new VerticalLayout();
-
+	final int N_SUBSCRIPTIONS = 10;
 	public VerticalLayout leftLayout = new VerticalLayout();
 	public VerticalLayout rightLayout = new VerticalLayout();
 	public HorizontalSplitPanel mainPanel = new HorizontalSplitPanel(
@@ -38,6 +40,8 @@ public class MyVaadinUI extends UI implements BroadcastListener {
 			"Requested subscriptions");
 	private final ActorSystem actorSystem = ActorSystem
 			.create("dummy-messages");
+	ActorRef subscriptionPool;
+	ActorRef servProvider;
 
 	@WebServlet(value = { "/*", "/VAADIN/*", "/MyVaadinUI/*" }, asyncSupported = true)
 	@VaadinServletConfiguration(productionMode = false, ui = MyVaadinUI.class, widgetset = "com.example.AppWidgetSet")
@@ -48,6 +52,7 @@ public class MyVaadinUI extends UI implements BroadcastListener {
 	protected void init(VaadinRequest request) {
 		buildLayout(mainLayout);
 		Broadcaster.register(this);
+		initActors();
 
 	}
 
@@ -58,28 +63,24 @@ public class MyVaadinUI extends UI implements BroadcastListener {
 		super.detach();
 	}
 
-	private void startsActors() {
-		final int N_SUBSCRIPTIONS = 10;
-
+	private void initActors() {
 		final ActorRef servProvider = actorSystem.actorOf(Props
 				.create(ServiceProvider.class));
-		String[] subsNames = new String[N_SUBSCRIPTIONS];
+
 		// Create a subscription pool actor, all subscriptions will be created
 		// in that class.
-		ActorRef subscriptionPool = actorSystem.actorOf(Props.create(
+		subscriptionPool = actorSystem.actorOf(Props.create(
 				SubscriptionPool.class, N_SUBSCRIPTIONS, servProvider));
+	}
 
+	private void startsActors() {
+		final int N_SUBSCRIPTIONS = 10;
+		String[] subsNames = new String[N_SUBSCRIPTIONS];
 		for (int i = 0; i < N_SUBSCRIPTIONS; i++) {
 			subsNames[i] = "Subscription " + i;
 			requestedSubsTextArea.setValue(requestedSubsTextArea.getValue()
 					+ "Requested: " + subsNames[i] + "\n");
 		}
-		// sends request of subscription every TIMEOUT seconds
-		// sends request from SubscriptionActor to PhoneActor
-		// actorSystem.scheduler().scheduleOnce(
-		// Duration.create(TIMEOUT, TimeUnit.SECONDS), servProvider,
-		// new SubscriptionRequest(), actorSystem.dispatcher(),
-		// subscriptions[i]);
 		// Send a message to the subscription pool and let it decide what to do
 		// :)
 		subscriptionPool.tell(new SubscriptionRequest(), null);
@@ -98,10 +99,34 @@ public class MyVaadinUI extends UI implements BroadcastListener {
 				startsActors();
 			}
 		});
+		Button btnError = new Button("Simulate error");
+		btnError.addClickListener(new Button.ClickListener() {
+			@Override
+			public void buttonClick(ClickEvent event) {
+				simulateError();
+			}
+		});
+		Button btnRecover = new Button("Simulate recover");
+		btnRecover.addClickListener(new Button.ClickListener() {
+			@Override
+			public void buttonClick(ClickEvent event) {
+				simulateRecover();
+			}
+		});
 		leftLayout.addComponent(button);
+		leftLayout.addComponent(btnError);
+		leftLayout.addComponent(btnRecover);
 		requestedSubsTextArea.setWidth("500px");
 		requestedSubsTextArea.setHeight("600px");
 		rightLayout.addComponent(requestedSubsTextArea);
+	}
+
+	private void simulateRecover() {
+		subscriptionPool.tell(new Recover(), null);
+	}
+
+	private void simulateError() {
+		subscriptionPool.tell(new SimulatedErrorMessage(), null);
 	}
 
 	@Override

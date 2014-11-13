@@ -4,8 +4,13 @@ import java.util.concurrent.TimeUnit;
 
 import scala.concurrent.duration.Duration;
 import akka.actor.UntypedActor;
+import akka.japi.Procedure;
 
 import com.example.messages.Busy;
+import com.example.messages.ProviderFail;
+import com.example.messages.Recover;
+import com.example.messages.Restart;
+import com.example.messages.SimulatedErrorMessage;
 import com.example.messages.SubscriptionApprovement;
 import com.example.messages.SubscriptionRequest;
 import com.example.messages.SuccessfulApprove;
@@ -15,6 +20,28 @@ public class ServiceProvider extends UntypedActor {
 	final private int MAX_COUNTER = 3;
 	static private int nTasks = 0;
 	final String APPROVE_MESSAGE = "approved";
+
+	/*
+	 * @Override public void preStart() throws Exception {
+	 * System.out.println("Service provider was restarted"); super.preStart();
+	 * };
+	 */
+	// Simulate provider is restarted, just send service restarting message
+	// back.
+	Procedure<Object> restart = new Procedure<Object>() {
+		@Override
+		public void apply(Object message) throws Exception {
+			if (message instanceof SubscriptionRequest) {
+				getSender().tell(new Restart(), getSelf());
+			} else if (message instanceof Recover) {
+				System.out.println("Service was recovered");
+				preRestart(null, null);
+			} else {
+				unhandled(message);
+			}
+
+		}
+	};
 
 	@Override
 	public void onReceive(Object message) throws Exception {
@@ -51,10 +78,25 @@ public class ServiceProvider extends UntypedActor {
 					.println("Recieve Successuful approve. Tasks in a queue ="
 							+ nTasks);
 
+		}
+		// here we simulate that something we get wrong message and we need to
+		// send an error message back
+		// so he Subscription can recover this error itself
+		// Also change provider behaviour so it will return restart message
+		// simulating
+		// it need some time to restart, after that provider will be restarted
+		// and
+		// subsciptions would be approved
+		else if (message instanceof SimulatedErrorMessage) {
+			System.out
+					.println("Provider recieved bad message. Provider will be restarted."
+							+ " All unfinnished subscriptions should be restarted too");
+			getContext().become(restart);
+			getSender().tell(new ProviderFail(), getSelf());
+
 		} else {
 			unhandled(message);
 		}
 
 	}
-
 }
