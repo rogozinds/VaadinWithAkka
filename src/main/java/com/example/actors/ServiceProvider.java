@@ -10,7 +10,7 @@ import com.example.messages.SubscriptionApprovement;
 import com.example.messages.SubscriptionRequest;
 import com.example.messages.SuccessfulApprove;
 
-public class PhoneSim extends UntypedActor {
+public class ServiceProvider extends UntypedActor {
 	final private int WORK_DELAY = 3;
 	final private int MAX_COUNTER = 3;
 	static private int nTasks = 0;

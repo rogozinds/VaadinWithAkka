@@ -10,7 +10,7 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 
 import com.example.Broadcaster.BroadcastListener;
-import com.example.actors.PhoneSim;
+import com.example.actors.ServiceProvider;
 import com.example.actors.Subscription;
 import com.example.messages.SubscriptionRequest;
 import com.vaadin.annotations.Push;
@@ -66,7 +66,7 @@ public class MyVaadinUI extends UI implements BroadcastListener {
 		final int TIMEOUT = 1;
 
 		final ActorRef phone = actorSystem
-				.actorOf(Props.create(PhoneSim.class));
+				.actorOf(Props.create(ServiceProvider.class));
 		String[] subsNames = new String[N_SUBSCRIPTIONS];
 		ActorRef[] subscriptions = new ActorRef[N_SUBSCRIPTIONS];
 		for (int i = 0; i < N_SUBSCRIPTIONS; i++) {
